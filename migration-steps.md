@@ -23,9 +23,17 @@ rsc cm16 show /api/deployments/:id view=full | jq '.instances[].server_template.
 ---
 
 * Publish all ST's:
+
 ```bash
 rsc cm15 publish /api/server_templates/:id \
 account_group_hrefs[]=/api/account_groups/:id \
 descriptions[short]="stuff" descriptions[notes]="stuff" \
 descriptions[long]="stuff"
 ```
+
+* Import ST's:
+```bash
+# How do we discover the HREF's to import? I'm guessing the href isn't consistent between accounts
+cm15 import <href> [<params>]
+```
+---
