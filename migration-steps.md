@@ -30,12 +30,18 @@ account_group_hrefs[]=/api/account_groups/:id \
 descriptions[short]="stuff" descriptions[notes]="stuff" \
 descriptions[long]="stuff"
 ```
-
 ---
 
 * Import ST's:
 ```bash
 # How do we discover the HREF's to import? I'm guessing the href isn't consistent between accounts
 cm15 import <href> [<params>]
+```
+---
+
+* Create new deployment:
+
+```bash
+cm15 create <href> [<params>]
 ```
 ---
