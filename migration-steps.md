@@ -23,4 +23,9 @@ rsc cm16 show /api/deployments/:id view=full | jq '.instances[].server_template.
 ---
 
 * Publish all ST's:
-rsc cm15 publish
+```bash
+rsc cm15 publish /api/server_templates/:id \
+account_group_hrefs[]=/api/account_groups/:id \
+descriptions[short]="stuff" descriptions[notes]="stuff" \
+descriptions[long]="stuff"
+```
