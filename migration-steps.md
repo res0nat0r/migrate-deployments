@@ -44,6 +44,6 @@ cm15 import <href> [<params>]
 * Create new deployment:
 
 ```bash
-cm15 create <href> [<params>]
+rsc cm15 create /api/deployments deployment[description]="stuff" deployment[name]="stuff"
 ```
 ---
