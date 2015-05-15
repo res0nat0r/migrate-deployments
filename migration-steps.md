@@ -56,7 +56,7 @@ rsc cm16 show /api/deployments/:id view=full
 ```
 ---
 
-* Discover relevant info about instances that need to be migrated (old account):
+* Discover relevant info about instances that need to be replicated (old account):
 
 ```bash
 # Note this isn't quite complete or 100% correct yet.
