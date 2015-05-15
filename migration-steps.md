@@ -60,7 +60,7 @@ rsc cm16 show /api/deployments/:id view=full
 
 ```bash
 # Note this isn't quite complete or 100% correct yet.
-rsc cm16 show /api/deployments/:id view= full | \
+rsc cm16 show /api/deployments/:id view=full | \
 jq '.instances[0].links | .name, .cloud, .datacenter,
  .multi_cloud_image, .instance_type, .security_groups'
  ```
