@@ -48,3 +48,10 @@ cm15 import <href> [<params>]
 rsc cm15 create /api/deployments deployment[description]="stuff" deployment[name]="stuff"
 ```
 ---
+
+* Discover all servers in existing deployment, to be recreated in new account:
+
+```bash
+rsc cm16 show /api/deployments/:id view=full
+```
+---
