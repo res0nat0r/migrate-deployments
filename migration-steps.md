@@ -36,7 +36,8 @@ descriptions[long]="stuff"
 * Import ST's:
 ```bash
 # How do we discover the HREF's to import?
-# The HREF isn't consistent between accounts.
+# The HREFs previously published from above don't
+# appear to be consistent between accounts.
 cm15 import <href> [<params>]
 ```
 ---
