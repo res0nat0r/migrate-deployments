@@ -59,7 +59,7 @@ rsc cm16 show /api/deployments/:id view=full
 * Discover relevant info about instances that need to be migrated (old account):
 
 ```bash
-# Note this isn't quite complete or 100% correct.
+# Note this isn't quite complete or 100% correct yet.
 rsc cm16 show /api/deployments/:id view= full | \
 jq '.instances[0].links | .name, .cloud, .datacenter,
  .multi_cloud_image, .instance_type, .security_groups'
