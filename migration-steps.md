@@ -55,3 +55,13 @@ rsc cm15 create /api/deployments deployment[description]="stuff" deployment[name
 rsc cm16 show /api/deployments/:id view=full
 ```
 ---
+
+* Discover relevant info about instances that need to be migrated (old account):
+
+```bash
+# Note this isn't quite complete or 100% correct.
+rsc cm16 show /api/deployments/:id view= full | \
+jq '.instances[0].links | .name, .cloud, .datacenter,
+ .multi_cloud_image, .instance_type, .security_groups'
+ ```
+ ---
