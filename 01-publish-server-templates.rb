@@ -12,6 +12,9 @@ server_templates.map! { |i| i.gsub(/"/,'') } # remove inner quote marks
 account = `rsc cm16 show #{ARGV[0]} view=full | jq '.links.account.id'`
 publications = []
 
+STDERR.puts "Discovered unique ServerTemplates:\n\n"
+server_templates.each { |st| STDERR.puts st }; puts "\n"
+
 server_templates.each do |st|
   description = `rsc cm15 show #{st} | jq '.description'`
   short_description = description[0..255]
@@ -22,15 +25,15 @@ server_templates.each do |st|
 
   cmd = ["rsc", "--xh", "Location", "cm15", "publish", "#{st}",
     "account_group_hrefs[]=/api/account_groups/#{ARGV[1]}",
-  "descriptions[short]=#{short_description}",
-  "descriptions[notes]=#{notes}",
-  "descriptions[long]=#{description}"]
+    "descriptions[short]=#{short_description}",
+    "descriptions[notes]=#{notes}",
+    "descriptions[long]=#{description}"]
 
-  res = IO.popen(cmd, 'r+') { |io|
+  result = IO.popen(cmd, 'r+') { |io|
     io.close_write
     io.read
   }
-  publications.push(res)
+  publications.push(result)
 end
 
 STDERR.puts "\nPUBLISHED:\n"
