@@ -18,7 +18,7 @@ server_templates.each do |st|
   name = `rsc cm15 show #{st} | jq '.name'`
   notes = "Auto imported from account: #{account}"
 
-  STDERR.puts "Publishing: #{name.chomp} to group #{ARGV[1].split('/').last} ...\n"
+  STDERR.puts "Publishing: #{name.chomp} to group: #{ARGV[1].split('/').last} ...\n"
 
   cmd = ["rsc", "--xh", "Location", "cm15", "publish", "#{st}",
     "account_group_hrefs[]=/api/account_groups/#{ARGV[1]}",
