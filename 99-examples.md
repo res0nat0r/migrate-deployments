@@ -1,9 +1,5 @@
-* Download the prebuilt Go based [RSC tool](https://github.com/rightscale/rsc) to query the [RightScale API](http://reference.rightscale.com/)
-* Download the [jq](http://stedolan.github.io/jq/) tool to parse JSON output.
 
----
-
-* Discover all deployments (old account):
+* Discover all deployments:
 ```bash
 rsc cm15 index /api/deployments | \
 jq '.[] | .name, [.links[] | select(.rel=="self").href][0]' | \
@@ -11,7 +7,7 @@ paste -sd"\t\n" - | sort
 ```
 ---
 
-* Discover all publishing groups (old account):
+* Discover all publishing groups
 
 ```bash
 rsc cm15 index /api/account_groups | \
@@ -20,14 +16,14 @@ paste -sd"\t\n" -
 ```
 ---
 
-* Extract all ST's from a deployment (old account):
+* Extract all ST's from a deployment
 
 ```bash
 rsc cm16 show /api/deployments/:id view=full | jq '.instances[].server_template.href' | sort | uniq
 ```
 ---
 
-* Publish all ST's (old account):
+* Publish all ST's
 
 ```bash
 # All ST's need to be a comitted version.
@@ -38,7 +34,7 @@ descriptions[long]="stuff"
 ```
 ---
 
-* Import ST's (new account):
+* Import ST's
 ```bash
 # How do we discover the HREF's to import?
 # The HREFs previously published from above don't
@@ -47,21 +43,21 @@ cm15 import <href> [<params>]
 ```
 ---
 
-* Create new deployment (new account):
+* Create new deployment 
 
 ```bash
 rsc cm15 create /api/deployments deployment[description]="stuff" deployment[name]="stuff"
 ```
 ---
 
-* Discover all servers in existing deployment (old account):
+* Discover all servers in existing deployment
 
 ```bash
 rsc cm16 show /api/deployments/:id view=full
 ```
 ---
 
-* Discover relevant info about instances that need to be replicated (old account):
+* Discover relevant info about instances that need to be replicated
 
 ```bash
 # Note this isn't quite complete or 100% correct yet.
