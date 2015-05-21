@@ -14,7 +14,7 @@ account = `rsc cm16 show #{ARGV[0]} view=full | jq '.links.account.id'`
 publications = []
 
 STDERR.puts "Discovered unique ServerTemplates:\n\n"
-server_templates.each { |st| STDERR.puts st }; puts "\n"
+server_templates.each { |st| STDERR.puts st }; STDERR.puts "\n"
 
 server_templates.each do |st|
   description = `rsc cm15 show #{st} | jq '.description'`
