@@ -4,6 +4,7 @@ unless ARGV.length == 2
   puts "Usage: #{$0} /api/deployments/:id /api/account_groups/:id\n\n"
   puts "/api/deployments/:id is the deployment ID to export."
   puts "/api/account_groups/:id is the account group where the ServerTemplates are to be published."
+  puts "\nNOTE: All ServerTemplates must be committed before they can be published. HEAD revisions cannot be published"
   exit 1
 end
 
