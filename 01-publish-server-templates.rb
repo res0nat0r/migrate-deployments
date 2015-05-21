@@ -36,5 +36,5 @@ server_templates.each do |st|
   publications.push(result)
 end
 
-STDERR.puts "\nPUBLISHED:\n"
+STDERR.puts "\nPUBLISHED:"
 publications.each { |p| puts p }
