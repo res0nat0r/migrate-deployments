@@ -4,13 +4,14 @@ require 'json'
 
 unless ARGV.length == 1
   puts "need deployment"
+  exit 1
 end
 
 deployment = JSON.parse(File.open('stuff/show.deployment.full.json', 'r').read)
 deployment_id = ARGV[0]
 
 deployment['servers'].each do |server|
-#  puts "Discovered server: #{server['name']}"
+  STDERR.puts "Discovered server: #{server['name']}"
 end
 
 deployment['servers'].each do |server|
@@ -34,20 +35,14 @@ deployment['servers'].each do |server|
     "server[instance][ssh_key_href]=#{ssh_key}",
     #server[instance][subnet_hrefs][]=[]string
     "server[instance][cloud_href]=#{cloud}",
-    "server[instance][image_href]=#{mci}",
+    "server[instance][multi_cloud_image_href]=#{mci}",
     "server[deployment_href]=#{deployment_id}",
-
-
-
-
-
-
-
+    "server[name]=#{name}"
   ]
 
   result = IO.popen(cmd, 'r+') { |io|
     io.close_write
     io.read
   }
-  publications.push(result)
+  puts "#{result}"
 end
