@@ -1,23 +1,53 @@
 #!/usr/bin/env ruby
 
 require 'json'
-require 'pry'
+
+unless ARGV.length == 1
+  puts "need deployment"
+end
 
 deployment = JSON.parse(File.open('stuff/show.deployment.full.json', 'r').read)
+deployment_id = ARGV[0]
 
 deployment['servers'].each do |server|
-  puts "Discovered server: #{server['name']}"
+#  puts "Discovered server: #{server['name']}"
 end
 
 deployment['servers'].each do |server|
-  name = server['name']
-  cloud_name = server['links']['cloud']['name']
-  cloud_href = server['links']['cloud']['href']
-  mci = server['links']['multi_cloud_image']['href']
-  datacenter = server['links']['datacenter']['href']
-  instance_type = server['links']['instance_type']['href']
-  #security_groups
-  ssh_key = server['links']['ssh_key']['href']
+  name             = server['next_instance']['name']
+  cloud            = server['next_instance']['links']['cloud']['href']
+  mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
+  instance_type    = server['next_instance']['links']['instance_type']['href']
+  ssh_key          = server['next_instance']['links']['ssh_key']['href']
+  server_template  = server['next_instance']['server_template']['href']
   # subnets
-  server_template = server['links']['href']
+  # security_groups
+  #  datacenter       = server['next_instance']['links']['datacenter']['href']
+
+  # stefhen-crap-clone 571903004
+  cmd = [
+    "rsc", "cm15", "create", "/api/servers",
+    "server[instance][multi_cloud_image_href]=#{mci}",
+    "server[instance][server_template_href]=#{server_template}",
+    "server[instance][instance_type_href]=#{instance_type}",
+    #server[instance][inputs]=map
+    "server[instance][ssh_key_href]=#{ssh_key}",
+    #server[instance][subnet_hrefs][]=[]string
+    "server[instance][cloud_href]=#{cloud}",
+    "server[instance][image_href]=#{mci}",
+    "server[deployment_href]=#{deployment_id}",
+
+
+
+
+
+
+
+  ]
+
+  result = IO.popen(cmd, 'r+') { |io|
+    io.close_write
+    io.read
+  }
+  publications.push(result)
 end
