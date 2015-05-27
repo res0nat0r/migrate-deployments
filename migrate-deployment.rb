@@ -13,7 +13,8 @@ opts = GetoptLong.new(
   [ "--deployment", GetoptLong::REQUIRED_ARGUMENT ]
 )
 
-src_account, dst_account, group, deployment = nil
+src_account, dst_account, group = nil
+deployment, deployment_name, deployment_description = nil
 help = <<-EOF
 #{$0} [options]
 
@@ -41,9 +42,11 @@ end
 # ----- Publish ServerTemplates ------
 
 # Get deployment info
-deployment = JSON.parse(`rsc -a #{src_account} cm16 show #{deployment} view=full`)
-server_templates = Set.new
-publications = []
+deployment             = JSON.parse(`rsc -a #{src_account} cm16 show #{deployment} view=full`)
+server_templates       = Set.new
+deployment_name        = deployment['name']
+deployment_description = deployment['description']
+publications           = []
 
 # Find unique server templates
 deployment['instances'].each do |instance|
@@ -55,7 +58,7 @@ deployment['instances'].each do |instance|
   server_templates.add(instance['server_template']['href'])
 end
 
-STDERR.puts "Discovered unique ServerTemplates:\n\n"
+STDERR.puts "Discovered unique ServerTemplates:\n"
 server_templates.each { |st| STDERR.puts st }; STDERR.puts "\n"
 
 server_templates.each do |st|
@@ -72,7 +75,8 @@ server_templates.each do |st|
     "account_group_hrefs[]=/api/account_groups/#{group}",
     "descriptions[short]=#{short_description}",
     "descriptions[notes]=#{notes}",
-    "descriptions[long]=#{description}"]
+    "descriptions[long]=#{description}"
+  ]
 
   result = IO.popen(cmd, 'r+') { |io|
     io.close_write
@@ -82,17 +86,33 @@ server_templates.each do |st|
 end
 
 STDERR.puts "\nPUBLISHED:"
-publications.each { |p| puts p }
+publications.each { |p| puts p }; STDERR.puts "\n"
 
 
 # --- Import ServerTemplates ---
 
+#  `rsc --account #{dst_account} cm15 import #{pub}`
 publications.each do |pub|
   STDERR.puts "Importing #{pub} to account: #{dst_account} ..."
-  `rsc --account #{dst_account} cm15 import #{pub}`
-end
 
+  cmd = ["rsc", "--account", "#{dst_account}", "cm15", "import", "#{pub}"]
+  result = IO.popen(cmd, 'r+') { |io|
+    io.close_write
+    io.read
+  }
+end
+puts "\n"
 
 # --- Recreate new Deployment ---
 
-STDERR.puts "Creating 
+STDERR.puts "Creating new deployment: #{deployment_name} in account: #{dst_account} ..."
+
+cmd = ["rsc", "--account", "#{dst_account}", "cm15", "create",
+  "/api/deployments", "deployment[name]=#{deployment_name}",
+  "deployment[description]=#{deployment_description}"
+]
+  result = IO.popen(cmd, 'r+') { |io|
+    io.close_write
+    io.read
+  }
+  STDERR.puts "#{result}"
