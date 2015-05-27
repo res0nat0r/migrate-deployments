@@ -2,9 +2,7 @@
 
 require 'getoptlong'
 require 'json'
-require 'set'
-
-#require 'pry'
+require 'pry'
 
 opts = GetoptLong.new(
   [ "--src", GetoptLong::REQUIRED_ARGUMENT ],
@@ -43,10 +41,9 @@ end
 
 # Get deployment info
 deployment             = JSON.parse(`rsc -a #{src_account} cm16 show #{deployment} view=full`)
-server_templates       = Set.new
+server_templates       = {}
 deployment_name        = deployment['name']
 deployment_description = deployment['description']
-publications           = []
 
 # Find unique server templates
 deployment['instances'].each do |instance|
@@ -55,13 +52,13 @@ deployment['instances'].each do |instance|
     STDERR.puts "Ensure all ServerTemplates have been committed."
     exit 1
   end
-  server_templates.add(instance['server_template']['href'])
+  server_templates[instance['server_template']['href']] = nil
 end
 
 STDERR.puts "Discovered unique ServerTemplates:\n"
-server_templates.each { |st| STDERR.puts st }; STDERR.puts "\n"
+server_templates.keys.each { |st| STDERR.puts st }; STDERR.puts "\n"
 
-server_templates.each do |st|
+server_templates.keys.each do |st|
   response = JSON.parse(`rsc cm15 show #{st}`)
   description = response['description']
   short_description = description[0..255]
@@ -71,33 +68,40 @@ server_templates.each do |st|
   STDERR.puts "Publishing: #{name} to group: #{group.split('/').last} ..."
 
   # Publish ServerTemplate
-  cmd = ["rsc", "--xh", "Location", "cm15", "publish", "#{st}",
+  cmd = ["rsc", "--account", "#{src_account}",
+    "--xh", "Location", "cm15", "publish", "#{st}",
     "account_group_hrefs[]=/api/account_groups/#{group}",
     "descriptions[short]=#{short_description}",
     "descriptions[notes]=#{notes}",
     "descriptions[long]=#{description}"
   ]
 
-  result = IO.popen(cmd, 'r+') { |io|
+  publication_url = IO.popen(cmd, 'r+') { |io|
     io.close_write
     io.read
   }
-  publications.push(result)
+  server_templates[st] = {"publication_url" => publication_url }
 end
 
-STDERR.puts "\nPUBLISHED:"
-publications.each { |p| puts p }; STDERR.puts "\n"
+#STDERR.puts "\nPUBLISHED:"
+#publications.each { |p| puts p }; STDERR.puts "\n"
 
 # --- Import ServerTemplates ---
 
-publications.each do |pub|
-  STDERR.puts "Importing #{pub} to account: #{dst_account} ..."
+server_templates.keys.each do |st|
+  url = server_templates[st]['publication_url']
 
-  cmd = ["rsc", "--account", "#{dst_account}", "cm15", "import", "#{pub}"]
-  result = IO.popen(cmd, 'r+') { |io|
+  STDERR.puts "Importing #{url} to account: #{dst_account} ..."
+
+  cmd = ["rsc", "--account", "#{dst_account}", "--xh", "Location",
+    "cm15", "import", "#{url}"
+  ]
+
+  new_st_url = IO.popen(cmd, 'r+') { |io|
     io.close_write
     io.read
   }
+  server_templates[st]['new_st_url'] = new_st_url
 end
 puts "\n"
 
@@ -115,6 +119,7 @@ new_deployment = IO.popen(cmd, 'r+') { |io|
   io.read
 }
 
+__END__
 # --- Create Instances ---
 
 deployment['servers'].each do |server|
