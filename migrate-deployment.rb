@@ -119,32 +119,35 @@ new_deployment = IO.popen(cmd, 'r+') { |io|
   io.read
 }
 
-__END__
 # --- Create Instances ---
 
-deployment['servers'].each do |server|
+#deployment['servers'].each do |server|
+deployment['servers'].first do |server|
   name             = server['next_instance']['name']
   cloud            = server['next_instance']['links']['cloud']['href']
   mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
   instance_type    = server['next_instance']['links']['instance_type']['href']
   ssh_key          = server['next_instance']['links']['ssh_key']['href']
-  server_template  = server['next_instance']['server_template']['href']
+  old_st_url       = server['next_instance']['server_template']['href']
+  new_st_url       = server_templates[old_st_url]['new_st_url']
   # subnets
   # security_groups
-  # datacenter       = server['next_instance']['links']['datacenter']['href']
+  # inputs
+
 
   cmd = [
-    "rsc", "cm15", "create", "/api/servers",
+    "rsc", "--account", "#{dst_account}",
+    "cm15", "create", "/api/servers",
     "server[name]=#{name}",
     "server[instance][multi_cloud_image_href]=#{mci}",
-    "server[instance][server_template_href]=#{server_template}",
+    "server[instance][server_template_href]=#{new_st_url}",
     "server[instance][instance_type_href]=#{instance_type}",
-    "server[instance][ssh_key_href]=#{ssh_key}",
     "server[instance][cloud_href]=#{cloud}",
     "server[instance][multi_cloud_image_href]=#{mci}",
     "server[deployment_href]=#{new_deployment}"
     #server[instance][inputs]=map
-    #server[instance][subnet_hrefs][]=[]string
+    # server[instance][subnet_hrefs][]=[]string
+    # "server[instance][ssh_key_href]=#{ssh_key}",
   ]
 
   STDERR.puts "Creating #{name} ..."
