@@ -93,9 +93,7 @@ server_templates.keys.each do |st|
 
   STDERR.puts "Importing #{url} to account: #{dst_account} ..."
 
-  cmd = ["rsc", "--account", "#{dst_account}", "--xh", "Location",
-    "cm15", "import", "#{url}"
-  ]
+  cmd = ["rsc", "--account", "#{dst_account}", "--xh", "Location", "cm15", "import", "#{url}"]
 
   new_st_url = IO.popen(cmd, 'r+') { |io|
     io.close_write
@@ -121,8 +119,7 @@ new_deployment = IO.popen(cmd, 'r+') { |io|
 
 # --- Create Instances ---
 
-#deployment['servers'].each do |server|
-deployment['servers'].first do |server|
+deployment['servers'].each do |server|
   name             = server['next_instance']['name']
   cloud            = server['next_instance']['links']['cloud']['href']
   mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
@@ -133,6 +130,27 @@ deployment['servers'].first do |server|
   # subnets
   # security_groups
   # inputs
+
+  old_st = JSON.parse(`rsc --account #{src_account} cm15 show #{old_st_url}`)
+  new_st = JSON.parse(`rsc --account #{dst_account} cm15 show #{new_st_url}`)
+
+  puts "Creating instance: #{name} ..."
+
+  binding.pry
+end
+
+
+
+
+
+
+
+
+
+
+
+__END__
+
 
 
   cmd = [
