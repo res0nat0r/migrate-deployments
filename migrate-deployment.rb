@@ -36,6 +36,7 @@ opts.each do |opt, arg|
 end
 
 #TODO: add help error message and arg parsing
+#TODO: Bail if dest deployment exists
 
 # ----- Publish ServerTemplates ------
 
@@ -118,7 +119,6 @@ new_deployment = IO.popen(cmd, 'r+') { |io|
 }
 
 # --- Create Instances ---
-
 deployment['servers'].each do |server|
   name             = server['next_instance']['name']
   cloud            = server['next_instance']['links']['cloud']['href']
@@ -134,34 +134,37 @@ deployment['servers'].each do |server|
   old_st = JSON.parse(`rsc --account #{src_account} cm15 show #{old_st_url}`)
   new_st = JSON.parse(`rsc --account #{dst_account} cm15 show #{new_st_url}`)
 
+  # --- MCI ---
+  # Find matching MCI being used on this instance in the new ST and use it
+  new_mcis_url, new_mci_list, new_mci = nil
+  old_mci = JSON.parse(`rsc --account #{src_account} cm15 show #{mci}`)
+
+  new_st['links'].each do |link|
+    new_mcis_url = link['href'] if link['rel'] == "multi_cloud_images"
+  end
+
+  new_mci_list = JSON.parse(`rsc --account #{dst_account} cm15 index #{new_mcis_url}`)
+
+  new_mci_list.each do |mci|
+    if ((old_mci['name'] == mci['name'])  && (old_mci['revision'] == mci['revision']))
+      mci['links'].each do |link|
+        new_mci = link['href'] if link['rel'] == 'self'
+      end
+    end
+  end
+  # --- END MCI ---
+
   puts "Creating instance: #{name} ..."
-
-  binding.pry
-end
-
-
-
-
-
-
-
-
-
-
-
-__END__
-
-
 
   cmd = [
     "rsc", "--account", "#{dst_account}",
     "cm15", "create", "/api/servers",
     "server[name]=#{name}",
-    "server[instance][multi_cloud_image_href]=#{mci}",
+    "server[instance][multi_cloud_image_href]=#{new_mci}",
     "server[instance][server_template_href]=#{new_st_url}",
-    "server[instance][instance_type_href]=#{instance_type}",
+#    "server[instance][instance_type_href]=#{instance_type}",
     "server[instance][cloud_href]=#{cloud}",
-    "server[instance][multi_cloud_image_href]=#{mci}",
+#    "server[instance][multi_cloud_image_href]=#{mci}",
     "server[deployment_href]=#{new_deployment}"
     #server[instance][inputs]=map
     # server[instance][subnet_hrefs][]=[]string
@@ -176,3 +179,20 @@ __END__
   }
   puts "#{result}"
 end
+
+
+__END__
+  cmd = [
+    "rsc", "--account", "#{dst_account}",
+    "cm15", "create", "/api/servers",
+    "server[name]=#{name}",
+    "server[instance][multi_cloud_image_href]=#{mci}",
+    "server[instance][server_template_href]=#{new_st_url}",
+    "server[instance][instance_type_href]=#{instance_type}",
+    "server[instance][cloud_href]=#{cloud}",
+    "server[instance][multi_cloud_image_href]=#{mci}",
+    "server[deployment_href]=#{new_deployment}"
+    #server[instance][inputs]=map
+    # server[instance][subnet_hrefs][]=[]string
+    # "server[instance][ssh_key_href]=#{ssh_key}",
+  ]
