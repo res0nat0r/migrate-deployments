@@ -3,6 +3,7 @@
 require 'getoptlong'
 require 'json'
 require 'pry'
+require 'right_api_client'
 
 opts = GetoptLong.new(
   [ "--src", GetoptLong::REQUIRED_ARGUMENT ],
@@ -127,11 +128,8 @@ deployment['servers'].each do |server|
   ssh_key          = server['next_instance']['links']['ssh_key']['href']
   old_st_url       = server['next_instance']['server_template']['href']
   new_st_url       = server_templates[old_st_url]['new_st_url']
-  inputs           = JSON.parse(`rsc --account #{src_account} cm15 index #{old_st_url}/inputs`)
-
-  # subnets
-  # security_groups
-
+  next_instance    = server['next_instance']['href']
+  inputs           = JSON.parse(`rsc --account #{src_account} cm15 show #{next_instance} view=full_inputs_2_0`)['inputs']
   old_st = JSON.parse(`rsc --account #{src_account} cm15 show #{old_st_url}`)
   new_st = JSON.parse(`rsc --account #{dst_account} cm15 show #{new_st_url}`)
 
@@ -154,11 +152,11 @@ deployment['servers'].each do |server|
     end
   end
   # --- END MCI ---
-
+binding.pry
   puts "Creating instance: #{name} ..."
 
   cmd = [
-    "rsc", "--account", "#{dst_account}",
+    "echo", "rsc", "--account", "#{dst_account}",
     "cm15", "create", "/api/servers",
     "server[name]=#{name}",
     "server[instance][multi_cloud_image_href]=#{new_mci}",
@@ -166,10 +164,9 @@ deployment['servers'].each do |server|
     "server[instance][instance_type_href]=#{instance_type}",
     "server[instance][cloud_href]=#{cloud}",
     "server[deployment_href]=#{new_deployment}",
-    "server[instance][inputs]=#{inputs}"
-    #server[instance][inputs]=map
-    # server[instance][subnet_hrefs][] # cant do..
-    # server[instance][ssh_key_href]
+#    "server[instance][inputs]=#{JSON.dump(inputs)}"
+    "server[instance][inputs]={'activemq/mirror':'http://storage.googleapis.com/rightscale-hello/activemq/apache-activemq-5.10.0-bin.tar.gz'}"
+
   ]
 
   STDERR.puts "Creating #{name} ..."
@@ -180,20 +177,3 @@ deployment['servers'].each do |server|
   }
   puts "#{result}"
 end
-
-
-__END__
-  cmd = [
-    "rsc", "--account", "#{dst_account}",
-    "cm15", "create", "/api/servers",
-    "server[name]=#{name}",
-    "server[instance][multi_cloud_image_href]=#{mci}",
-    "server[instance][server_template_href]=#{new_st_url}",
-    "server[instance][instance_type_href]=#{instance_type}",
-    "server[instance][cloud_href]=#{cloud}",
-    "server[instance][multi_cloud_image_href]=#{mci}",
-    "server[deployment_href]=#{new_deployment}"
-    #server[instance][inputs]=map
-    # server[instance][subnet_hrefs][]=[]string
-    # "server[instance][ssh_key_href]=#{ssh_key}",
-  ]
