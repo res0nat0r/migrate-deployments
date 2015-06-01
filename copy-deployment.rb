@@ -7,6 +7,7 @@ require 'right_api_client'
 
 @options = {}
 @server_templates = {}
+@deployment = nil
 
 creds = JSON.parse(File.open("#{ENV['HOME']}/.rsc").read)
 
@@ -30,15 +31,18 @@ end.parse!
 
 def main
   publish()
+  import()
+  recreate()
 end
 
-# --- PUBLISH ---
-# Iterate through all servers in a deployment and publish all unique ServerTemplates
+# ----- Publish all unique ServerTemplates in a deployment -----
 def publish
-  deployment = @api.deployments(:id => @options[:deployment]).show
-  servers = deployment.show.servers.index
+  # Use soure account ID to discover deployment
+  @api.account_id = @options[:src]
+  @deployment = @api.deployments(:id => @options[:deployment]).show
+  servers = @deployment.show.servers.index
 
-  puts "Discovered deployment: #{deployment.name} ...\n\n"
+  puts "Discovered deployment: #{@deployment.name} ...\n\n"
 
   # find href of current servers servertemplate and set it as the key in the server_templates hash
   servers.each do |server|
@@ -57,41 +61,127 @@ def publish
   end
 
   # Publish each unique ServerTemplate
+  puts "\n"
   @server_templates.keys.each do |server_template|
     st = @api.resource(server_template)
 
     puts "Publishing: #{st.name} to group: #{@options[:group]} ..."
     response = st.publish(
-      "account_group_hrefs" => [ @options[:group] ],
-      "descriptions[long]" => st.description,
+      "account_group_hrefs" => [ "/api/account_groups/#{@options[:group]}" ],
+      "descriptions[long]"  => st.description,
       "descriptions[short]" => st.description[0..255],
       "descriptions[notes]" => "Auto imported from account #{@options[:src]}"
     )
     # Add publication URL to hash
-    @server_templates[server_template]["publication_url"] = response.show.href
+    @server_templates[server_template]['publication_url'] = response.show.href
   end
 end
 
+# ----- Import published ServerTemplates to destination account -----
 def import
+  # Use destination account ID
+  @api.account_id = @options[:dst]
 
+  puts "\n"
+  # Import each ServerTemplate and store the new location
+  @server_templates.keys.each do |server_template|
+    # Grab ID number from /api/server_templates/:id
+    id = @server_templates[server_template]['publication_url'].split('/').last
+    response = @api.publications(:id => id).import
+
+    puts "Importing: #{response.show.name} ..."
+
+    @server_templates[server_template]['new_location'] = response.show.href
+  end
 end
 
+# ----- Recreate existing servers in old deployment in new account -----
+def recreate
+  # Use src account ID
+  @api.account_id = @options[:src]
+  servers = @deployment.show.servers.index
 
-__END__
+  servers.each do |server|
+    name = server.next_instance.show.name
+    cloud = server.next_instance.show.links.select {|l| l['rel'] == 'cloud'}.first['href']
+    #TODO: fix
+    mci = server.next_instance.show.links.select {|l| l['rel'] == 'multi_cloud_image'}.first['href']
+    instance_type 
+binding.pry
+
+
+=begin
+    mci = server.next_instance.show.links.select {|l| l['rel'] == 'computed_multi_cloud_image'}.first['href']
+
+    mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
+    instance_type    = server['next_instance']['links']['instance_type']['href']
+    ssh_key          = server['next_instance']['links']['ssh_key']['href']
+    old_st_url       = server['next_instance']['server_template']['href']
+    new_st_url       = @server_templates[old_st_url]['new_st_url']
+    next_instance    = server['next_instance']['href']
+=end
+  end
+end
 
 main()
 
-server_templates.keys.each do |st|
-  url = server_templates[st]['publication_url']
 
-  STDERR.puts "Importing #{url} to account: #{dst_account} ..."
+__END__
+# --- Create Instances ---
+deployment['servers'].each do |server|
+  name             = server['next_instance']['name']
+  cloud            = server['next_instance']['links']['cloud']['href']
+  mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
+  instance_type    = server['next_instance']['links']['instance_type']['href']
+  ssh_key          = server['next_instance']['links']['ssh_key']['href']
+  old_st_url       = server['next_instance']['server_template']['href']
+  new_st_url       = server_templates[old_st_url]['new_st_url']
+  next_instance    = server['next_instance']['href']
+  inputs           = JSON.parse(`rsc --account #{src_account} cm15 show #{next_instance} view=full_inputs_2_0`)['inputs']
+  old_st = JSON.parse(`rsc --account #{src_account} cm15 show #{old_st_url}`)
+  new_st = JSON.parse(`rsc --account #{dst_account} cm15 show #{new_st_url}`)
 
-  cmd = ["rsc", "--account", "#{dst_account}", "--xh", "Location", "cm15", "import", "#{url}"]
+  # --- MCI ---
+  # Find matching MCI being used on this instance in the new ST and use it
+  new_mcis_url, new_mci_list, new_mci = nil
+  old_mci = JSON.parse(`rsc --account #{src_account} cm15 show #{mci}`)
 
-  new_st_url = IO.popen(cmd, 'r+') { |io|
+  new_st['links'].each do |link|
+    new_mcis_url = link['href'] if link['rel'] == "multi_cloud_images"
+  end
+
+  new_mci_list = JSON.parse(`rsc --account #{dst_account} cm15 index #{new_mcis_url}`)
+
+  new_mci_list.each do |mci|
+    if ((old_mci['name'] == mci['name'])  && (old_mci['revision'] == mci['revision']))
+      mci['links'].each do |link|
+        new_mci = link['href'] if link['rel'] == 'self'
+      end
+    end
+  end
+  # --- END MCI ---
+binding.pry
+  puts "Creating instance: #{name} ..."
+
+  cmd = [
+    "echo", "rsc", "--account", "#{dst_account}",
+    "cm15", "create", "/api/servers",
+    "server[name]=#{name}",
+    "server[instance][multi_cloud_image_href]=#{new_mci}",
+    "server[instance][server_template_href]=#{new_st_url}",
+    "server[instance][instance_type_href]=#{instance_type}",
+    "server[instance][cloud_href]=#{cloud}",
+    "server[deployment_href]=#{new_deployment}",
+#    "server[instance][inputs]=#{JSON.dump(inputs)}"
+    "server[instance][inputs]={'activemq/mirror':'http://storage.googleapis.com/rightscale-hello/activemq/apache-activemq-5.10.0-bin.tar.gz'}"
+
+  ]
+
+  STDERR.puts "Creating #{name} ..."
+
+  result = IO.popen(cmd, 'r+') { |io|
     io.close_write
     io.read
   }
-  server_templates[st]['new_st_url'] = new_st_url
+  puts "#{result}"
 end
-puts "\n"
