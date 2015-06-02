@@ -35,13 +35,17 @@ def main
   recreate()
 end
 
+
+
+
+
+
 # ----- Publish all unique ServerTemplates in a deployment -----
 def publish
   # Use soure account ID to discover deployment
   @api.account_id = @options[:src]
-  @deployment = @api.deployments(:id => @options[:deployment]).show
+  @deployment = @api.deployments(:id => @options[:deployment], :view => "inputs_2_0").show
   servers = @deployment.show.servers.index
-
   puts "Discovered deployment: #{@deployment.name} ...\n\n"
 
   # find href of current servers servertemplate and set it as the key in the server_templates hash
@@ -77,6 +81,11 @@ def publish
   end
 end
 
+
+
+
+
+
 # ----- Import published ServerTemplates to destination account -----
 def import
   # Use destination account ID
@@ -91,42 +100,73 @@ def import
 
     puts "Importing: #{response.show.name} ..."
 
-    @server_templates[server_template]['new_location'] = response.show.href
+    @server_templates[server_template]['new_st_url'] = response.show.href
   end
 end
+
+
+
+
+
 
 # ----- Recreate existing servers in old deployment in new account -----
 def recreate
   # Use src account ID
   @api.account_id = @options[:src]
-  servers = @deployment.show.servers.index
 
-  servers.each do |server|
-    name = server.next_instance.show.name
-    cloud = server.next_instance.show.links.select {|l| l['rel'] == 'cloud'}.first['href']
-    #TODO: fix
-    mci = server.next_instance.show.links.select {|l| l['rel'] == 'multi_cloud_image'}.first['href']
-    instance_type 
-binding.pry
+  # use "rsc" tool to get detailed deployment view from api 1.6, not supported by right_api_client
+  deployment = JSON.parse(`rsc -a #{@options[:src]} cm16 show /api/deployments/#{@options[:deployment]} view=full`)
 
-
-=begin
-    mci = server.next_instance.show.links.select {|l| l['rel'] == 'computed_multi_cloud_image'}.first['href']
-
+  deployment['servers'].each do |server|
+    name             = server['next_instance']['name']
+    cloud            = server['next_instance']['links']['cloud']['href']
     mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
     instance_type    = server['next_instance']['links']['instance_type']['href']
     ssh_key          = server['next_instance']['links']['ssh_key']['href']
     old_st_url       = server['next_instance']['server_template']['href']
     new_st_url       = @server_templates[old_st_url]['new_st_url']
-    next_instance    = server['next_instance']['href']
-=end
+    old_mci_url      = @api.resource(mci).show.href
+    old_mci          = @api.resource(old_mci_url).show
+    inputs           = @api.resource(server['next_instance']['href']).show.inputs
+
+    @api.account_id = @options[:dst]
+
+    # Find matching MCI from src account in dst account
+    new_mci_url  =  @api.resource(new_st_url).show.links.select {|l| l['rel'] == 'multi_cloud_images'}.first['href']
+    new_mci_list = @api.resource(new_mci_url).index
+    new_mci      = new_mci_list.select{|m| m.name == old_mci.name && m.revision == old_mci.revision}
   end
 end
 
 main()
 
-
 __END__
+  new_mci_list.each do |mci|
+    if ((old_mci['name'] == mci['name'])  && (old_mci['revision'] == mci['revision']))
+      mci['links'].each do |link|
+        new_mci = link['href'] if link['rel'] == 'self'
+      end
+    end
+
+
+
+
+
+  # --- MCI ---
+  # Find matching MCI being used on this instance in the new ST and use it
+  new_mcis_url, new_mci_list, new_mci = nil
+  old_mci = JSON.parse(`rsc --account #{src_account} cm15 show #{mci}`)
+
+  new_st['links'].each do |link|
+    new_mcis_url = link['href'] if link['rel'] == "multi_cloud_images"
+  end
+
+  new_mci_list = JSON.parse(`rsc --account #{dst_account} cm15 index #{new_mcis_url}`)
+
+
+#  old_st = JSON.parse(`rsc --account #{@options[:src]} cm15 show #{old_st_url}`)
+#  new_st = JSON.parse(`rsc --account #{dst_account} cm15 show #{new_st_url}`)
+
 # --- Create Instances ---
 deployment['servers'].each do |server|
   name             = server['next_instance']['name']
@@ -185,3 +225,17 @@ binding.pry
   }
   puts "#{result}"
 end
+
+
+
+
+=begin
+  servers = @deployment.show.servers.index
+
+  servers.each do |server|
+    name = server.next_instance.show.name
+    cloud = server.next_instance.show.links.select {|l| l['rel'] == 'cloud'}.first['href']
+    mci = server.next_instance.show.links.select {|l| l['rel'] == 'multi_cloud_image'}.first['href'] #TODO: fix?
+
+    mci = server.next_instance.show.links.select {|l| l['rel'] == 'computed_multi_cloud_image'}.first['href']
+=end
