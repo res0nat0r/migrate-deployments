@@ -29,6 +29,7 @@ opts.on("-g", "--group <id>", "Export ServerTemplates to Publishing Group ID") {
 end.parse!
 
 def main
+  find_cloud("/api/clouds/1")
   check_if_deployment_exists
   publish_templates
   import_templates
@@ -80,7 +81,7 @@ def publish_templates
   @server_templates.keys.each do |server_template|
     st = @api.resource(server_template)
 
-    puts "Publishing: #{st.name} to group: #{@options[:group]} ..."
+    puts "Publishing: \"#{st.name}\" to group: #{@options[:group]} ..."
     response = st.publish(
       "account_group_hrefs" => [ "/api/account_groups/#{@options[:group]}" ],
       "descriptions[long]"  => st.description,
@@ -142,7 +143,9 @@ def create_servers
   old_deployment['servers'].each do |server|
     @api.account_id = @options[:src]
     name             = server['next_instance']['name']
-    cloud            = server['next_instance']['links']['cloud']['href']
+    puts "Creating server: #{name} ...\n"
+    cloud            = find_cloud(server['next_instance']['links']['cloud']['href'])
+binding.pry
     mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
     instance_type    = server['next_instance']['links']['instance_type']['href']
     ssh_key          = server['next_instance']['links']['ssh_key']['href']
@@ -188,9 +191,38 @@ def create_servers
     }}}
 
     @api.account_id = @options[:dst]
-    puts "Creating server: #{name} ..."
     @api.servers.create(params)
   end
+end
+
+
+# ----- Find cloud -----
+def find_cloud(old_cloud_href)
+  @api.account_id = @options[:dst]
+  cloud = @api.clouds.index.select {|cloud| cloud.href == old_cloud_href}.first
+binding.pry  
+  if cloud
+    puts "Found matching cloud: #{cloud.name}"
+    return cloud.href
+  else
+    puts "\nNo Matching Cloud Found\n\n"
+    puts "Choose One:"
+    i = 0
+    @api.clouds.index.each do |cloud|
+      puts "[#{i}] #{cloud.name}\n"
+      i += 1
+    end
+    print "\n? "
+    return @api.clouds.index[gets.chomp.to_i].href
+  end
+end
+
+
+
+# ----- Find SSH key -----
+def find_ssh_key(cloud, ssh_key)
+  @api.account_id = @options[:dst]
+ binding.pry 
 end
 
 main()
