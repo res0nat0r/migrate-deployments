@@ -121,7 +121,7 @@ def create_deployment
     }
   }
 
-  puts "\nCreating deployment: #{params[:deployment][:name]} in account: #{@options[:dst]} ..."
+  puts "\nCreating deployment: #{params[:deployment][:name]} in account: #{@options[:dst]} ...\n"
 
   @api.account_id = @options[:dst]
   result = @api.deployments.create(params)
@@ -159,12 +159,14 @@ def create_servers
     # create input key/value pairs
     @api.account_id = @options[:src]
     inputs.index.each do |input|
-      # Array input format isn't correct and must be fixed.
+      # Array input format type isn't correct and must be changed to a json array.
+      # More info here: http://reference.rightscale.com/api1.5/resources/ResourceInputs.html#multi_update
       if input.value =~ /^array:/
         array = input.value.sub(/^array:/, "").split(",")
         array.map {|a| a.sub!(/^/, "\"text:").sub!(/$/, "\"")}
         new_array = array.join(",")
         new_array.sub!(/^/, "array:[")
+        new_array.sub!(/$/, "]")
         inputs_hash[input.name] = new_array
       else
         inputs_hash[input.name] = input.value
@@ -181,7 +183,7 @@ def create_servers
           :server_template_href => new_st_url,
           :inputs => inputs_hash
     }}}
-binding.pry
+
     @api.account_id = @options[:dst]
     puts "Creating server: #{name} ..."
     @api.servers.create(params)
