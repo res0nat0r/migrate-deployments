@@ -5,14 +5,6 @@ Requirements
 * Download the [jq](http://stedolan.github.io/jq/) tool to parse JSON output.
 
 ---
-
-List all accounts you have access to:
-
-``bash
-code here
-```
----
-
 Discover the deployment ID you wish to migrate:
 
 ```bash
@@ -29,3 +21,4 @@ rsc cm15 index /api/account_groups | \
 jq '.[] | .name, [.links[] | select(.rel=="self").href][0]' | \
 paste -sd"\t\n" -
 ```
+---
