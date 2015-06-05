@@ -19,8 +19,6 @@ creds = JSON.parse(File.open("#{ENV['HOME']}/.rsc").read)
   :enable_retry => true,
   :timeout      => nil)
 
-@api.log("/Users/stefhenhovland/work/stuff/rsc/migration-steps/log")
-
 OptionParser.new do |opts|
 opts.banner = "Usage: #{$0} [options]"
 
@@ -31,6 +29,7 @@ opts.on("-g", "--group <id>", "Export ServerTemplates to Publishing Group ID") {
 end.parse!
 
 def main
+  check_if_deployment_exists
   publish_templates()
   import_templates()
   create_deployment()
@@ -38,7 +37,17 @@ def main
 end
 
 
+# ----- Check if deployment with matching name exists in destination account -----
+def check_if_deployment_exists
+  @api.account_id = @options[:src]
+  @old_deployment = @api.deployments(:id => @options[:deployment], :view => "inputs_2_0").show
 
+  @api.account_id = @options[:dst]
+  if @api.deployments.index(:filter => ["name==#{@old_deployment.name}"])
+    $stderr.puts "ERROR: Deployment with name \"#{@old_deployment.name}\" already exists in account #{@options[:dst]}\n"
+    exit 1
+  end
+end
 
 
 
