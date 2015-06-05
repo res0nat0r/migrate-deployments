@@ -30,10 +30,10 @@ end.parse!
 
 def main
   check_if_deployment_exists
-  publish_templates()
-  import_templates()
-  create_deployment()
-  create_servers()
+  publish_templates
+  import_templates
+  create_deployment
+  create_servers
 end
 
 
@@ -43,7 +43,7 @@ def check_if_deployment_exists
   @old_deployment = @api.deployments(:id => @options[:deployment], :view => "inputs_2_0").show
 
   @api.account_id = @options[:dst]
-  if @api.deployments.index(:filter => ["name==#{@old_deployment.name}"])
+  if @api.deployments.index(:filter => ["name==#{@old_deployment.name}"]).length != 0
     $stderr.puts "ERROR: Deployment with name \"#{@old_deployment.name}\" already exists in account #{@options[:dst]}\n"
     exit 1
   end
@@ -64,7 +64,7 @@ def publish_templates
     puts "Discovered server: #{server.name} ..."
 
     if server.next_instance.show.server_template.show.revision == 0
-      puts "ERROR: Cannot publish a HEAD version of a ServerTemplate. Please commit first."
+      $stderr.puts "ERROR: Cannot publish a HEAD version of a ServerTemplate. Please commit first."
       exit 1
     end
     @server_templates[server.next_instance.show.server_template.show.href] =
@@ -93,10 +93,6 @@ def publish_templates
 end
 
 
-
-
-
-
 # ----- Import published ServerTemplates to destination account -----
 def import_templates
   # Use destination account ID
@@ -117,8 +113,6 @@ end
 
 
 
-
-# TODO: Check for existin deployment and abort if exists
 # ------ Create a new deployment in the dst account -----
 def create_deployment
   @api.account_id = @options[:dst]
@@ -130,7 +124,7 @@ def create_deployment
     }
   }
 
-  puts "\nCreating deployment: #{params[:deployment][:name]} in account: #{@options[:dst]} ...\n"
+  puts "\nCreating deployment: \"#{params[:deployment][:name]}\" in account: #{@options[:dst]} ...\n"
 
   @api.account_id = @options[:dst]
   result = @api.deployments.create(params)
