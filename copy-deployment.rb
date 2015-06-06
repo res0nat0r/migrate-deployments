@@ -29,7 +29,6 @@ opts.on("-g", "--group <id>", "Export ServerTemplates to Publishing Group ID") {
 end.parse!
 
 def main
-  find_cloud("/api/clouds/1")
   check_if_deployment_exists
   publish_templates
   import_templates
