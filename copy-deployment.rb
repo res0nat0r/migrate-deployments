@@ -225,10 +225,10 @@ end
 # ----- Find SSH key -----
 def find_ssh_key(new_cloud, ssh_key, name)
   if not ssh_key
-    puts "Original host does not have an ssh key set, leaving blank ...\n"
+    puts "Original host does not have an ssh key set, leaving blank ...\n\n"
     return ""
   end
- 
+
   @api.account_id = @options[:src]
   old_ssh_key = @api.resource(ssh_key['href'])
 
@@ -237,22 +237,22 @@ def find_ssh_key(new_cloud, ssh_key, name)
   new_ssh_key = new_ssh_keys.index.select {|key| key.name == old_ssh_key.name}.first
 
   if new_ssh_key
-    puts "Found matching ssh key for \"#{name}\" using ...\n"
+    puts "Found matching ssh key: \"#{old_ssh_key.name}\" using ...\n\n"
     return new_ssh_key.href
   elsif
     new_ssh_keys.index.length == 0
     puts "No ssh keys found...leaving blank.\n\n"
     return ""
   else
-    puts "Matching ssh key not found for: \"#{name}\"\n\n"
+    puts "Matching ssh key not found: \"#{old_ssh_key.name}\"\n\n"
     puts "Choose One:"
-    print "\n? "
     i = 0
     new_ssh_keys.index.each  do |key|
       puts "[#{i}] #{key.name}\n"
       i += 1
-      return new_ssh_keys.index[gets.chomp.to_i].href
     end
+    print "\n? "
+    return new_ssh_keys.index[gets.chomp.to_i].href
   end
 end
 
