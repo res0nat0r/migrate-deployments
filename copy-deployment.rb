@@ -211,7 +211,7 @@ def find_cloud(old_cloud_href, name)
     return cloud.href
   else
     puts "\nNo matching cloud found for: \"#{name}\"\n"
-    puts "Choose One:"
+    puts "Choose Cloud:"
     i = 0
     @api.clouds.index.each do |cloud|
       puts "[#{i}] #{cloud.name}\n"
@@ -245,7 +245,7 @@ def find_ssh_key(new_cloud, ssh_key, name)
     return ""
   else
     puts "Matching ssh key not found: \"#{old_ssh_key.name}\"\n\n"
-    puts "Choose One:"
+    puts "Choose Key:"
     i = 0
     new_ssh_keys.index.each  do |key|
       puts "[#{i}] #{key.name}\n"
