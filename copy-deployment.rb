@@ -241,7 +241,7 @@ def find_ssh_key(new_cloud, ssh_key, name)
     return new_ssh_key.href
   elsif
     new_ssh_keys.index.length == 0
-    puts "No ssh keys found...leaving blank.\n\n"
+    puts "No ssh keys in new cloud found...leaving blank.\n\n"
     return ""
   else
     puts "Matching ssh key not found: \"#{old_ssh_key.name}\"\n\n"
