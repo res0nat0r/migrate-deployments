@@ -36,7 +36,6 @@ def main
   create_servers
 end
 
-
 # ----- Check if deployment with matching name exists in destination account -----
 def check_if_deployment_exists
   @api.account_id = @options[:src]
@@ -48,8 +47,6 @@ def check_if_deployment_exists
     exit 1
   end
 end
-
-
 
 # ----- Publish all unique ServerTemplates in a deployment -----
 def publish_templates
@@ -92,7 +89,6 @@ def publish_templates
   end
 end
 
-
 # ----- Import published ServerTemplates to destination account -----
 def import_templates
   # Use destination account ID
@@ -110,8 +106,6 @@ def import_templates
     @server_templates[server_template]['new_st_url'] = response.show.href
   end
 end
-
-
 
 # ------ Create a new deployment in the dst account -----
 def create_deployment
@@ -131,9 +125,6 @@ def create_deployment
   @new_deployment = result.href
 end
 
-
-
-
 # ----- Recreate existing servers from old deployment in new account -----
 def create_servers
   # use "rsc" tool to get detailed deployment + server  view from api 1.6, not supported by right_api_client
@@ -151,21 +142,15 @@ def create_servers
     ssh_key          = find_ssh_key(cloud, server['next_instance']['links']['ssh_key'], name)
     @api.account_id = @options[:src]
 
-
-    mci              = server['next_instance']['links']['computed_multi_cloud_image']['href']
     instance_type    = server['next_instance']['links']['instance_type']['href']
     old_st_url       = server['next_instance']['server_template']['href']
     new_st_url       = @server_templates[old_st_url]['new_st_url']
-    old_mci_url      = @api.resource(mci).show.href
-    old_mci          = @api.resource(old_mci_url).show
+    
+    mci              = choose_mci(new_st_url)
+    @api.account_id = @options[:src]
+
     inputs           = @api.resource(server['next_instance']['href']).show.inputs
     inputs_hash      = {}
-
-    # Find matching MCI from src account in dst account
-    @api.account_id = @options[:dst]
-    new_mci_url     =  @api.resource(new_st_url).show.links.select {|l| l['rel'] == 'multi_cloud_images'}.first['href']
-    new_mci_list    = @api.resource(new_mci_url).index
-    new_mci         = new_mci_list.select{|mci| mci.name == old_mci.name && mci.revision == old_mci.revision}.first.href
     
     # create input key/value pairs
     @api.account_id = @options[:src]
@@ -199,7 +184,6 @@ def create_servers
     @api.servers.create(params)
   end
 end
-
 
 # ----- Find cloud -----
 def find_cloud(old_cloud_href, name)
@@ -252,8 +236,25 @@ def find_ssh_key(new_cloud, ssh_key, name)
       i += 1
     end
     print "\n? "
+
     return new_ssh_keys.index[gets.chomp.to_i].href
   end
+end
+
+# ----- Choose MCI -----
+def choose_mci(server_template_url)
+  @api.account_id =  @options[:dst]
+  server_template = @api.resource(server_template_url)
+
+  puts "Choose MultiCloud Image:\n\n"
+  i = 0
+  server_template.multi_cloud_images.index.each do |mci|
+    puts "[#{i}] #{mci.name}\n"
+    i += 1
+  end
+  print "\n? "
+
+  return server_template.multi_cloud_images.index[gets.chomp.to_i].href
 end
 
 main()
