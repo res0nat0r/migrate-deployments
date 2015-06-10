@@ -187,10 +187,7 @@ def create_servers
   end
 end
 
-# ================] Helper Functions [==================
-
-
-# ----- Find cloud -----
+# ----- Find Matching Cloud Or Prompt User -----
 def find_cloud(old_cloud_href, name)
   @api.account_id = @options[:dst]
   cloud = @api.clouds.index.select {|cloud| cloud.href == old_cloud_href}.first
@@ -211,7 +208,7 @@ def find_cloud(old_cloud_href, name)
   end
 end
 
-# ----- Find SSH key -----
+# ----- Find Matching SSH Key Or Prompt User -----
 def find_ssh_key(new_cloud, ssh_key, name)
   if not ssh_key
     puts "Original host does not have an ssh key set, leaving blank ...\n\n"
@@ -246,7 +243,7 @@ def find_ssh_key(new_cloud, ssh_key, name)
   end
 end
 
-# ----- Choose MCI -----
+# ----- List MCI's For User To Choose ------
 def choose_mci(server_template_url)
   @api.account_id =  @options[:dst]
   server_template = @api.resource(server_template_url)
@@ -266,7 +263,7 @@ end
 def choose_instance_type(new_cloud)
   @api.account_id = @options[:dst]
   instance_types = @api.clouds(:id => new_cloud.split("/").last).show.instance_types
-binding.pry
+
   puts "Choose Instance Type:\n\n"
   i = 0
   instance_types.index.each do |instance|
