@@ -142,7 +142,7 @@ def create_servers
     ssh_key          = find_ssh_key(cloud, server['next_instance']['links']['ssh_key'], name)
     @api.account_id = @options[:src]
 
-    instance_type    = server['next_instance']['links']['instance_type']['href']
+    instance_type    = choose_instance_type(cloud)
     old_st_url       = server['next_instance']['server_template']['href']
     new_st_url       = @server_templates[old_st_url]['new_st_url']
     
@@ -178,27 +178,17 @@ def create_servers
     params[:server][:instance][:cloud_href] = cloud
     params[:server][:instance][:server_template_href] = new_st_url
     params[:server][:instance][:ssh_key_href] = ssh_key if ssh_key
-    params[:inputs] = inputs_hash
+    params[:server][:instance][:instance_type_href] = instance_type
+    params[:server][:instance][:multi_cloud_image_href] = mci
+    params[:server][:instance][:inputs] = inputs_hash
       
-
-=begin
-    # Create server
-    params = { 
-      :server => {
-        :name => name,
-        :deployment_href => @new_deployment,
-        :instance => {
-          :cloud_href => cloud,
-          :server_template_href => new_st_url,
-          :ssh_key_href => ssh_key,
-          :inputs => inputs_hash
-    }}}
-=end
-
     @api.account_id = @options[:dst]
     @api.servers.create(params)
   end
 end
+
+# ================] Helper Functions [==================
+
 
 # ----- Find cloud -----
 def find_cloud(old_cloud_href, name)
@@ -270,6 +260,22 @@ def choose_mci(server_template_url)
   print "\n? "
 
   return server_template.multi_cloud_images.index[gets.chomp.to_i].href
+end
+
+# ----- Choose Instance Type ------
+def choose_instance_type(new_cloud)
+  @api.account_id = @options[:dst]
+  instance_types = @api.clouds(:id => new_cloud.split("/").last).show.instance_types
+binding.pry
+  puts "Choose Instance Type:\n\n"
+  i = 0
+  instance_types.index.each do |instance|
+    puts "[#{i}] #{instance.name}\n"
+    i += 1
+  end
+  print "\n? "
+
+  return instance_types.index[gets.chomp.to_i].href
 end
 
 main()
