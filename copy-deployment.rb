@@ -168,7 +168,20 @@ def create_servers
         inputs_hash[input.name] = input.value
       end
     end
-    
+
+    # Create server
+    params = {}
+    params[:server] = {}
+    params[:server][:name] = name
+    params[:server][:deployment_href] = @new_deployment
+    params[:server][:instance] = {}
+    params[:server][:instance][:cloud_href] = cloud
+    params[:server][:instance][:server_template_href] = new_st_url
+    params[:server][:instance][:ssh_key_href] = ssh_key if ssh_key
+    params[:inputs] = inputs_hash
+      
+
+=begin
     # Create server
     params = { 
       :server => {
@@ -180,6 +193,7 @@ def create_servers
           :ssh_key_href => ssh_key,
           :inputs => inputs_hash
     }}}
+=end
 
     @api.account_id = @options[:dst]
     @api.servers.create(params)
@@ -211,7 +225,7 @@ end
 def find_ssh_key(new_cloud, ssh_key, name)
   if not ssh_key
     puts "Original host does not have an ssh key set, leaving blank ...\n\n"
-    return ""
+    return nil
   end
 
   @api.account_id = @options[:src]
@@ -227,7 +241,7 @@ def find_ssh_key(new_cloud, ssh_key, name)
   elsif
     new_ssh_keys.index.length == 0
     puts "No ssh keys in new cloud found...leaving blank.\n\n"
-    return ""
+    return nil
   else
     puts "Matching ssh key not found: \"#{old_ssh_key.name}\"\n\n"
     puts "Choose Key:"
