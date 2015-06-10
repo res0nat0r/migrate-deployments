@@ -168,7 +168,7 @@ def create_servers
         inputs_hash[input.name] = input.value
       end
     end
-binding.pry    
+
     # Create server
     params = {}
     params[:server] = {}
@@ -177,7 +177,7 @@ binding.pry
     params[:server][:instance] = {}
     params[:server][:instance][:cloud_href] = cloud
     params[:server][:instance][:server_template_href] = new_st_url
-    params[:server][:ssh_key_href] = ssh_key if ssh_key
+    params[:server][:instance][:ssh_key_href] = ssh_key if ssh_key
     params[:inputs] = inputs_hash
       
 
@@ -194,8 +194,6 @@ binding.pry
           :inputs => inputs_hash
     }}}
 =end
-
-
 
     @api.account_id = @options[:dst]
     @api.servers.create(params)
