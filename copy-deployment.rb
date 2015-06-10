@@ -177,6 +177,7 @@ def create_servers
         :instance => {
           :cloud_href => cloud,
           :server_template_href => new_st_url,
+          :ssh_key_href => ssh_key,
           :inputs => inputs_hash
     }}}
 
