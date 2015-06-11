@@ -2,9 +2,7 @@
 
 require 'optparse'
 require 'json'
-require 'pry'
 require 'right_api_client'
-require 'pry-debugger'
 
 @options = {}
 @server_templates = {}
