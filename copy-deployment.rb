@@ -279,9 +279,6 @@ end
 
 # ----- Choose Subnets -----
 def choose_subnets(new_cloud) 
-  require 'pry'
-  require 'pry-debugger'
-
   @api.account_id = @options[:dst]
   subnets = @api.resource(new_cloud).show.subnets
 
@@ -296,8 +293,6 @@ def choose_subnets(new_cloud)
   puts "\n[#{i}] NO SUBNET\n"
   print "\n? "
   choice = gets.chomp.split(",").map(&:to_i)
-
-  binding.pry
 
   if choice == i
     return nil
