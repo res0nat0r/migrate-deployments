@@ -147,6 +147,9 @@ def create_servers
     mci              = choose_mci(new_st_url)
     @api.account_id = @options[:src]
 
+    subnets          = choose_subnets(cloud)
+    @api.account_id  = @options[:src]
+
     inputs           = @api.resource(server['next_instance']['href']).show.inputs
     inputs_hash      = {}
     
@@ -178,6 +181,7 @@ def create_servers
     params[:server][:instance][:ssh_key_href] = ssh_key if ssh_key
     params[:server][:instance][:instance_type_href] = instance_type
     params[:server][:instance][:multi_cloud_image_href] = mci
+    params[:server][:instance][:subnet_hrefs] = subnets if subnets
     params[:server][:instance][:inputs] = inputs_hash
       
     @api.account_id = @options[:dst]
@@ -271,6 +275,39 @@ def choose_instance_type(new_cloud)
   print "\n? "
 
   return instance_types.index[gets.chomp.to_i].href
+end
+
+# ----- Choose Subnets -----
+def choose_subnets(new_cloud) 
+  require 'pry'
+  require 'pry-debugger'
+
+  @api.account_id = @options[:dst]
+  subnets = @api.resource(new_cloud).show.subnets
+
+  puts "Choose All Subnets (separated by commas):\n\n"
+  i = 0
+  subnets.index.each do |subnet|
+    puts "[#{i}] #{subnet.name}\n"
+    i += 1
+  end
+
+  # Allow no choice
+  puts "\n[#{i}] NO SUBNET\n"
+  print "\n? "
+  choice = gets.chomp.split(",").map(&:to_i)
+
+  binding.pry
+
+  if choice == i
+    return nil
+  else
+    new_subnets = []
+    choice.each do |choice|
+      new_subnets.push(subnets.index[choice].href)
+    end
+    return new_subnets
+  end
 end
 
 main()
