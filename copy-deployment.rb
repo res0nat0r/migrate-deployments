@@ -183,7 +183,6 @@ def create_servers
     params[:server][:instance][:multi_cloud_image_href] = mci
     params[:server][:instance][:subnet_hrefs] = subnets if subnets
     params[:server][:instance][:inputs] = inputs_hash
-      
     @api.account_id = @options[:dst]
     @api.servers.create(params)
   end
@@ -294,7 +293,8 @@ def choose_subnets(new_cloud)
   print "\n? "
   choice = gets.chomp.split(",").map(&:to_i)
 
-  if choice == i
+  # Return array of subnet hrefs or nil
+  if choice.length == 1 and choice.first == i
     return nil
   else
     new_subnets = []
