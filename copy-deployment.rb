@@ -107,7 +107,8 @@ end
 
 # ------ Create a new deployment in the dst account -----
 def create_deployment
-  @api.account_id = @options[:dst]
+  @api.account_id = @options[:src]
+  inputs = format_inputs(@old_deployment.show.inputs)
 
   params = {
     :deployment => {
@@ -121,6 +122,12 @@ def create_deployment
   @api.account_id = @options[:dst]
   result = @api.deployments.create(params)
   @new_deployment = result.href
+
+  # Set deployment level inputs. Cannot set them at create time, so do it now
+  deployment = @api.resource(@new_deployment)
+  deployment_inputs = {}
+  deployment_inputs[:inputs] = inputs
+  deployment.inputs.multi_update(deployment_inputs)
 end
 
 # ----- Recreate existing servers from old deployment in new account -----
@@ -150,25 +157,7 @@ def create_servers
     subnets          = choose_subnets(cloud)
     @api.account_id  = @options[:src]
 
-    inputs           = @api.resource(server['next_instance']['href']).show.inputs
-    inputs_hash      = {}
-    
-    # create input key/value pairs
-    @api.account_id = @options[:src]
-    inputs.index.each do |input|
-      # Array input format type isn't correct and must be changed to a json array.
-      # More info here: http://reference.rightscale.com/api1.5/resources/ResourceInputs.html#multi_update
-      if input.value =~ /^array:/
-        array = input.value.sub(/^array:/, "").split(",")
-        array.map {|a| a.sub!(/^/, "\"text:").sub!(/$/, "\"")}
-        new_array = array.join(",")
-        new_array.sub!(/^/, "array:[")
-        new_array.sub!(/$/, "]")
-        inputs_hash[input.name] = new_array
-      else
-        inputs_hash[input.name] = input.value
-      end
-    end
+    inputs_hash      = format_inputs(@api.resource(server['next_instance']['href']).show.inputs)
 
     # Create server
     params = {}
@@ -305,4 +294,26 @@ def choose_subnets(new_cloud)
   end
 end
 
+# ----- Convert Input key/value pairs to hash -----
+def format_inputs(inputs)
+  @api.account_id = @options[:src]
+  result = {}
+
+  inputs.index.each do |input|
+    # Array input format type isn't correct and must be changed to a json array.
+    # More info here: http://reference.rightscale.com/api1.5/resources/ResourceInputs.html#multi_update
+    if input.value =~ /^array:/
+      array = input.value.sub(/^array:/, "").split(",")
+      array.map {|a| a.sub!(/^/, "\"text:").sub!(/$/, "\"")}
+      new_array = array.join(",")
+      new_array.sub!(/^/, "array:[")
+      new_array.sub!(/$/, "]")
+      result[input.name] = new_array
+    else
+      result[input.name] = input.value
+    end
+  end
+
+  return result
+end
 main()
