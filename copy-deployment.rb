@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+require 'pry'
+require 'pry-debugger'
+
 require 'optparse'
 require 'json'
 require 'right_api_client'
@@ -144,7 +147,8 @@ def create_servers
     cloud            = find_cloud(server['next_instance']['links']['cloud']['href'], name)
     @api.account_id = @options[:src]
 
-    ssh_key          = find_ssh_key(cloud, server['next_instance']['links']['ssh_key'], name)
+#    ssh_key          = find_ssh_key(cloud, server['next_instance']['links']['ssh_key'], name)
+    ssh_key           = nil
     @api.account_id = @options[:src]
 
     instance_type    = choose_instance_type(cloud)
@@ -155,6 +159,9 @@ def create_servers
     @api.account_id = @options[:src]
 
     subnets          = choose_subnets(cloud)
+    @api.account_id  = @options[:src]
+
+    security_groups  = choose_security_groups(cloud)
     @api.account_id  = @options[:src]
 
     inputs_hash      = format_inputs(@api.resource(server['next_instance']['href']).show.inputs)
@@ -270,7 +277,7 @@ def choose_subnets(new_cloud)
   @api.account_id = @options[:dst]
   subnets = @api.resource(new_cloud).show.subnets
 
-  puts "Choose All Subnets (separated by commas):\n\n"
+  puts "Choose All Subnets To Use (separated by commas):\n\n"
   i = 0
   subnets.index.each do |subnet|
     puts "[#{i}] #{subnet.name}\n"
@@ -291,6 +298,42 @@ def choose_subnets(new_cloud)
       new_subnets.push(subnets.index[choice].href)
     end
     return new_subnets
+  end
+end
+
+# ----- Choose Security Groups -----
+def choose_security_groups(cloud_href)
+  @api.account_id = @options[:dst]
+
+# TODO: Add check for clouds which don't have security groups and return nil
+# Using respond_to? Will fix this
+  
+  cloud = @api.resource(cloud_href).show
+  
+  if not cloud.respond_to?("security_groups") return nil
+
+  security_groups = cloud.show.security_groups
+
+  puts "Choose All Security Groups To Use (separated by commas):\n\n"
+  i = 0
+  security_groups.index.each do |sg|
+    puts "[#{i}] #{sg.name}\n"
+    i += 1
+  end
+
+  # Allow no choice
+  puts "\n[#{i}] NO SECURITY GROUP\n"
+  print "\n? "
+  choice = gets.chomp.split(",").map(&:to_i)
+  # Return array of security group hrefs or nil
+  if choice.length == 1 and choice.first == i
+    return nil
+  else
+    new_security_groups = []
+    choice.each do |c|
+      new_security_groups.push(security_groups.index[c].href)
+    end
+    return new_security_groups
   end
 end
 
