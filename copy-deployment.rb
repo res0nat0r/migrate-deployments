@@ -305,12 +305,12 @@ end
 def choose_security_groups(cloud_href)
   @api.account_id = @options[:dst]
 
-# TODO: Add check for clouds which don't have security groups and return nil
-# Using respond_to? Will fix this
-  
   cloud = @api.resource(cloud_href).show
-  
-  if not cloud.respond_to?("security_groups") return nil
+
+  # If respond_true? is false then this cloud doesn't support security groups
+  if not cloud.respond_to?("security_groups")
+    return nil
+  end
 
   security_groups = cloud.show.security_groups
 
