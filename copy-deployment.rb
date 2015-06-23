@@ -144,8 +144,7 @@ def create_servers
     cloud            = find_cloud(server['next_instance']['links']['cloud']['href'], name)
     @api.account_id = @options[:src]
 
-#    ssh_key          = find_ssh_key(cloud, server['next_instance']['links']['ssh_key'], name)
-    ssh_key           = nil
+    ssh_key          = find_ssh_key(cloud, server['next_instance']['links']['ssh_key'], name)
     @api.account_id = @options[:src]
 
     instance_type    = choose_instance_type(cloud)
