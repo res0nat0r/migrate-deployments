@@ -1,8 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'pry'
-require 'pry-debugger'
-
 require 'optparse'
 require 'json'
 require 'right_api_client'
