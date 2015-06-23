@@ -157,6 +157,9 @@ def create_servers
     subnets          = choose_subnets(cloud)
     @api.account_id  = @options[:src]
 
+    security_groups  = choose_security_groups(cloud)
+    @api.account_id  = @options[:src]
+
     inputs_hash      = format_inputs(@api.resource(server['next_instance']['href']).show.inputs)
 
     # Create server
@@ -270,7 +273,7 @@ def choose_subnets(new_cloud)
   @api.account_id = @options[:dst]
   subnets = @api.resource(new_cloud).show.subnets
 
-  puts "Choose All Subnets (separated by commas):\n\n"
+  puts "Choose All Subnets To Use (separated by commas):\n\n"
   i = 0
   subnets.index.each do |subnet|
     puts "[#{i}] #{subnet.name}\n"
@@ -291,6 +294,42 @@ def choose_subnets(new_cloud)
       new_subnets.push(subnets.index[choice].href)
     end
     return new_subnets
+  end
+end
+
+# ----- Choose Security Groups -----
+def choose_security_groups(cloud_href)
+  @api.account_id = @options[:dst]
+
+  cloud = @api.resource(cloud_href).show
+
+  # If respond_true? is false then this cloud doesn't support security groups
+  if not cloud.respond_to?("security_groups")
+    return nil
+  end
+
+  security_groups = cloud.show.security_groups
+
+  puts "Choose All Security Groups To Use (separated by commas):\n\n"
+  i = 0
+  security_groups.index.each do |sg|
+    puts "[#{i}] #{sg.name}\n"
+    i += 1
+  end
+
+  # Allow no choice
+  puts "\n[#{i}] NO SECURITY GROUP\n"
+  print "\n? "
+  choice = gets.chomp.split(",").map(&:to_i)
+  # Return array of security group hrefs or nil
+  if choice.length == 1 and choice.first == i
+    return nil
+  else
+    new_security_groups = []
+    choice.each do |c|
+      new_security_groups.push(security_groups.index[c].href)
+    end
+    return new_security_groups
   end
 end
 
