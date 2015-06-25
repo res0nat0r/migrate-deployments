@@ -174,6 +174,7 @@ def create_servers
     params[:server][:instance][:instance_type_href] = instance_type
     params[:server][:instance][:multi_cloud_image_href] = mci
     params[:server][:instance][:subnet_hrefs] = subnets if subnets
+    params[:server][:instance][:security_group_hrefs] = security_groups
     params[:server][:instance][:inputs] = inputs_hash
     @api.account_id = @options[:dst]
     @api.servers.create(params)
@@ -284,7 +285,7 @@ def choose_security_groups(cloud_href)
 
   cloud = @api.resource(cloud_href).show
 
-  # If respond_true? is false then this cloud doesn't support security groups
+  # If respond_to? is false then this cloud doesn't support security groups
   if not cloud.respond_to?("security_groups")
     return nil
   end
