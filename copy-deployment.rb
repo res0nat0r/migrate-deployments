@@ -144,7 +144,7 @@ def create_servers
     cloud            = find_cloud(server['next_instance']['links']['cloud']['href'], name)
     @api.account_id = @options[:src]
 
-    ssh_key          = find_ssh_key(cloud, server['next_instance']['links']['ssh_key'], name)
+    ssh_key          = choose_ssh_key(cloud)
     @api.account_id = @options[:src]
 
     instance_type    = choose_instance_type(cloud)
@@ -201,39 +201,20 @@ def find_cloud(old_cloud_href, name)
   end
 end
 
-# ----- Find Matching SSH Key Or Prompt User -----
-def find_ssh_key(new_cloud, ssh_key, name)
-  if not ssh_key
-    puts "Original host does not have an ssh key set, leaving blank ...\n\n"
-    return nil
-  end
-
-  @api.account_id = @options[:src]
-  old_ssh_key = @api.resource(ssh_key['href'])
-
+# ----- List SSH Keys For User To Choose From -----
+def choose_ssh_key(cloud)
   @api.account_id = @options[:dst]
-  new_ssh_keys = @api.resource(new_cloud).ssh_keys
-  new_ssh_key = new_ssh_keys.index.select {|key| key.name == old_ssh_key.name}.first
 
-  if new_ssh_key
-    puts "Found matching ssh key: \"#{old_ssh_key.name}\" using ...\n\n"
-    return new_ssh_key.href
-  elsif
-    new_ssh_keys.index.length == 0
-    puts "No ssh keys in new cloud found...leaving blank.\n\n"
-    return nil
-  else
-    puts "Matching ssh key not found: \"#{old_ssh_key.name}\"\n\n"
-    puts "Choose Key:"
-    i = 0
-    new_ssh_keys.index.each  do |key|
-      puts "[#{i}] #{key.name}\n"
-      i += 1
-    end
-    print "\n? "
-
-    return new_ssh_keys.index[gets.chomp.to_i].href
+  ssh_keys = @api.clouds(:id => cloud.split("/").last).show.ssh_keys
+  puts "Choose SSH Key:\n\n"
+  i = 0
+  ssh_keys.index.each do |key|
+    puts "[#{i}] #{key.name}\n"
+    i += 1
   end
+  print "\n? "
+
+  return ssh_keys.index[gets.chomp.to_i].href
 end
 
 # ----- List MCI's For User To Choose ------
