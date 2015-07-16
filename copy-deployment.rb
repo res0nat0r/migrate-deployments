@@ -337,4 +337,7 @@ def format_inputs(inputs)
 
   return result
 end
+
+# ----- Main program entry point -----
+
 main()
