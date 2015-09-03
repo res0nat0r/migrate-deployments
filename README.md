@@ -2,6 +2,7 @@ Requirements
 ---
 
 * (Required) Download the prebuilt Go based [RSC tool](https://github.com/rightscale/rsc) to query the [RightScale API](http://docs.rightscale.com/api/)
+* (Required) Install the [right_api_client](https://github.com/rightscale/right_api_client)
 * (Optional) Download the [jq](http://stedolan.github.io/jq/) tool to parse JSON output.
 
 ---
